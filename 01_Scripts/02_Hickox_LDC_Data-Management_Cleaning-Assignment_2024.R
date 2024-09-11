@@ -3,8 +3,17 @@
 #Author: MK Hickox
 #Date: Sept. 11,2024
 #Title: Data Cleaning Assignment, LDC Data Management 2024.
+
 #Data Source: BWG Database (supplied by Dr.Diane Srivastava, UBC)
 #Dataset Used: Visits
+#Working Directory: This R Project, containing the above data
+#GitHub: https://github.com/mk-hickox/Hickox_LDC_Data-Management_2024
+
+# The Problem/Goal of Script ----------------------------------------------
+This criterion is linked to a Learning OutcomeDescription: The Problem
+(1) Does the brief written description correctly identify the chosen data cleaning task, including where in the dataset(s) the issues might arise?
+  
+  (2) Does the description include examples of the sorts of issues that were identified in the data?
 
 # instructions ------------------------------------------------------------
 
@@ -15,5 +24,51 @@ For the 'visits' dataframe, change the name 'date' to 'visit_date', and add colu
   Assign a coordinate reference system to all coordinates, and then project geographic coordinates. [suggested package: sf; see example code in tutorial 2]. Make sure these coordinates are on planet Earth, i.e. somewhere between N and S poles.
 
 # Script ------------------------------------------------------------------
+## Load Packages
+library(tidyverse)
+library(lubridate)
+library(sf)
+library(taxize)
+library(myTAI)
+library(renv)
 
+## Load Dataset
+getwd() #confirm working directory is project
+
+myfiles <- list.files(path = "00_RawData/BWG_database/", pattern = "*.csv", full.names = TRUE) #loads files
+
+list2env(
+  lapply(
+    setNames(myfiles, 
+             make.names(
+               gsub(".*1_", "", 
+                    tools::file_path_sans_ext(myfiles)))), 
+    read_csv), 
+  envir = .GlobalEnv) #imports tables and makes names more succinct 
+
+# 1. Check data for class/format errors -------------------------------------------
+#Problem 1:
+    #Here, I want to check that my columns of interest (Date, lat and long) are all the correct class and format.
+
+view(visits) #open dataset 
+str(visits) 
+
+#Solution 1:
+    #The date column class is "Date", and the lat and long are listed as numerical, so all looks good for now.
+    #Visual inspection also confirms that the date follows ISO standard (ymd), but if it HAD been incorrectly formatted, we would have used: visits$date <- as_date(visits$date) 
+                                                                                                                                            #visits$date <- ymd(visits$date)
+
+# 2. Reformat the visits column -------------------------------------------
+#Problem 2:
+    #Here, I want to rename the "date" column to "visit_date" and also separate date into multiple columns of "year", "month", and "day"
+    #Once the columns are split, I also want to confirm that the years fall within the possible dates (according to the study design)
+    #All dates must fall between 1997-2024, as data was not collected outside of this range. Alternate dates indicate errors.
+visits_output <- #making a name for 
+  visits %>%
+dplyr::rename(visit_date = date) 
+
+year(visits$date)
+month(visits$date)
+month(visits$date, label = TRUE, abbr = FALSE)
+day(visits$date)
 
