@@ -52,7 +52,6 @@ list2env(
 
 view(visits) #open dataset 
 str(visits) 
-
 #Solution 1:
     #The date column class is "Date", and the lat and long are listed as numerical, so all looks good for now.
     #Visual inspection also confirms that the date follows ISO standard (ymd), but if it HAD been incorrectly formatted, we would have used: visits$date <- as_date(visits$date) 
@@ -63,12 +62,28 @@ str(visits)
     #Here, I want to rename the "date" column to "visit_date" and also separate date into multiple columns of "year", "month", and "day"
     #Once the columns are split, I also want to confirm that the years fall within the possible dates (according to the study design)
     #All dates must fall between 1997-2024, as data was not collected outside of this range. Alternate dates indicate errors.
-visits_output <- #making a name for 
+visits <-
   visits %>%
-dplyr::rename(visit_date = date) 
+dplyr::rename(visit_date = date) #Renaming the "date" column to "visit_date"
 
-year(visits$date)
-month(visits$date)
-month(visits$date, label = TRUE, abbr = FALSE)
-day(visits$date)
+visits <- #Isolating the month, day, and year and adding as new columns
+  visits %>%
+  mutate(visit_year= year(visits$visit_date), #getting the years of visits
+       visit_month= month(visits$visit_date), #getting the month of visits
+      visit_day= day(visits$visit_date)) %>% #getting day of visit
+  relocate(visit_year,visit_month,visit_day, .after = 4) #Moving the new columns after the "visit_date" column (i.e. column 4)
 
+view(visits) #confirm that all changes look good via visual inspection!
+
+range(visits$year) #Checking the range of years.The years fall between 1997-2010, which is as expected. Data pass this check.
+
+#Solution 2:
+  #Here, I renamed the "date" column to "visit_date" using dplyr rename. 
+  #I then split the "visit_date" column into year, month, and day using lubridicate, and confirmed that the years are valid (ranging between 1997-2024).
+  #I added the new columns into the "visits" dataset using mutate and rearranged the header order using "relocate"
+
+# 3. Add relevant column to bromeliad dataset -----------------------------
+
+
+range(visits$latitude) #Checking the range of latitude values. Range is 10.983-10.983, 
+range(visits$longitude) #Checking the longitude range. Range is -85.433- -85.433,
