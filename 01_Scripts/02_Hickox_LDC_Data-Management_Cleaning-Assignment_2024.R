@@ -9,12 +9,6 @@
 #Working Directory: This R Project, containing the above data
 #GitHub: https://github.com/mk-hickox/Hickox_LDC_Data-Management_2024
 
-# The Problem/Goal of Script ----------------------------------------------
-#The overall tasks are outlined below, taken directly from the assignment instructions:
-#"(1) Does the brief written description correctly identify the chosen data cleaning task, including where in the dataset(s) the issues might arise?
-  
-  (2) Does the description include examples of the sorts of issues that were identified in the data?
-
 # instructions ------------------------------------------------------------
 #Quoted directly from the Dates/coordinates task of the Cleaning Assignment:
   #1. Check all dates are ISO standards (yyyy-mm-dd, ISO 8601Links to an external site.). [suggested packages: lubridate; see example code in tutorial 2]. Check these dates are in the range 1997-2024.
@@ -22,6 +16,7 @@
   #3. Lastly, add the 'date' column from 'visits' to the 'bromeliads' dataframe, immediately after the column 'collection_date'. Does the visit_date match with the 'collection_date' in the bromeliads dataframe?
   #4. Assign a coordinate reference system to all coordinates, and then project geographic coordinates. [suggested package: sf; see example code in tutorial 2]. Make sure these coordinates are on planet Earth, i.e. somewhere between N and S poles.
 
+#Goal of this script: Identify errors in spatial and temporal data, and join aspects of multiple datasets!
 # Script ------------------------------------------------------------------
 ## Load Packages
 library(tidyverse)
@@ -30,6 +25,8 @@ library(sf)
 library(renv)
 library(assertr)
 library(readr)
+
+renv::init
 
 ## Load Dataframe:
 getwd() #confirm working directory is project
@@ -50,11 +47,22 @@ list2env(
     #Here, I want to check that my column of interest (Date) is in the correct class and format.
 
 view(visits) #open dataset 
-str(visits) 
+view(bromeliads) #open dataset
+
+visits$date <- as_date(visits$date) #converting to date format
+visits$date <- ymd(visits$date) #ensuring that the dates are in y-m-d format.
+bromeliads$collection_date <- as_date(bromeliads$collection_date) #converting to date format
+bromeliads$collection_date <- ymd(bromeliads$collection_date)#ensuring that the dates are in y-m-d format.
+
+#Checks to confirm that all data are now correct
+class(bromeliads$collection_date) #class is date, which is what I want!
+unique(bromeliads$collection_date) #checking date format, looks good (yyy-mm-dd)
+class(visits$date) #checking to see if class is date. It is, so all good! 
+head(visits$date) #checking date format, looks good (yyy-mm-dd)
+
 #Solution 1:
-    #The date column class is "Date", and the lat and long are listed as numerical, so all looks good for now.
-    #Visual inspection also confirms that the date follows ISO standard (ymd), but if it HAD been incorrectly formatted, we would have used: visits$date <- as_date(visits$date) 
-                                                                                                                                            #visits$date <- ymd(visits$date)
+    #"date" and "collection_date" columns in visits and bromeliads datasets are of class "Date" and in the format of y-m-d. 
+    #Note that the columns were already in the correct format, but I showed the steps to adjust them (for reference) 
 
 # 2. Reformat the visits column -------------------------------------------
 #Problem 2:
@@ -70,10 +78,11 @@ visits <- #Isolating the month, day, and year and adding as new columns
   mutate(visit_year= year(visits$visit_date), #getting the years of visits
        visit_month= month(visits$visit_date), #getting the month of visits
       visit_day= day(visits$visit_date)) %>% #getting day of visit
-  relocate(visit_year,visit_month,visit_day, .after = visit_date) #Moving the new columns after the "visit_date" column (i.e. column 4)
+  relocate(visit_year,visit_month,visit_day, .after = visit_date) #Moving the new columns after the "visit_date" column
 
+#Checks:
 view(visits) #confirm that all changes look good via visual inspection!
-
+names(visits) #confirming column names are added and are in correct order
 range(visits$visit_year) #Checking the range of years.The years fall between 1997-2010, which is as expected (i.e. between 1997-2024). Data pass this check.
 
 #Solution 2:
@@ -94,21 +103,23 @@ bromeliads_output<-
   left_join(.,bromeliads, by= "visit_id") %>% #joining tables by "visit_id"
   relocate("visit_date", .after= "collection_date") #moving the new column after "collection_date"
 
+#Checks:
 view(bromeliads_output) #checking output visually. Looks good.
-names(bromeliads_output) #checking column names and numbers
+names(bromeliads_output) #checking column names and order
 
 bromeliads_output %>%
   verify(collection_date == visit_date) #Checking to see if the row values for both columns are identical.
                                         # Get an error message with 74 failures, meaning that for 74 rows, the values are not identical.
 nrow(bromeliads_output)                 #There are a total of 76 rows, so only 2 rows are identical for both columns.
                                         #This indicates that the collection and visit dates are not the same. 
+
 bromeliads_output %>%
   select(collection_date, visit_date) %>%
   view() #Isolating the columns of interest for visual inspection
         # Further inspection indicates that the collection_date contains many NA, and the date is often later than the visit_date.
        
 #Solution 3:
-  #I added the visit_date in the correct order from the visits dataset to the bromeliads dataset.
+  #I added the visit_date in the correct order from the visits dataset to the bromeliads dataset (linking by visit_id)
   #I compared both columns and found that 74/76 were not identical.
   #Collection_date contains many NA and later dates than visit_date.
   #This likely means that not all bromeliads were collected and/or that collections often took place after the initial visit
@@ -135,13 +146,20 @@ utm_lat_long<-
 visits_output<- 
   visits_output %>%
   mutate(utm_lat_long = utm_lat_long$geometry) #saving the transformed spatial data in the dataframe 
-view(visits_output) #checking
 
-write_csv(visits_output,"./03_Output/00_Cleaned_visits.csv") #saving the cleaned visits output file
-write_csv(bromeliads_output,"./03_Output/00_Cleaned_bromeliads.csv") #saving the cleaned bromeliads output file
+#Check
+view(visits_output) #Ensuring that my changes were made via visual inspection.
+
+#Save files and package info
+write_csv(visits_output,"./02_Output/00_Cleaned_visits.csv") #saving the cleaned visits output file
+write_csv(bromeliads_output,"./02_Output/00_Cleaned_bromeliads.csv") #saving the cleaned bromeliads output file
+renv::snapshot() #saving package info.
 
 #Solution 4:
   #I checked the range of the latitude and longitude values, and there were all within the possible range.
   #I then assigned crs: WGS84, projected the data (zone 16), and saved the projection in the output file.
   #The datasets are now clean and ready for analysis!
   #I saved the cleaned output files in 03_Output
+
+
+##End of script!
