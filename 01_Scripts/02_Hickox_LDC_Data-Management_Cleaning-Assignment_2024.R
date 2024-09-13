@@ -31,6 +31,7 @@ library(sf)
 library(taxize)
 library(myTAI)
 library(renv)
+library(assertr)
 
 ## Load Dataset
 getwd() #confirm working directory is project
@@ -83,7 +84,25 @@ range(visits$year) #Checking the range of years.The years fall between 1997-2010
   #I added the new columns into the "visits" dataset using mutate and rearranged the header order using "relocate"
 
 # 3. Add relevant column to bromeliad dataset -----------------------------
+#Problem 3:
+  #I need to add the "visit_date" column from visits to the bromeliad dataset.
+  #The new column needs to be ordered after the "collection_date" column
 
+view(bromeliads) #Opening the bromeliad dataset. Looks like "visit_id" connects the visits and bromeliads datasets
+
+
+bromeliads_output<-
+  visits %>%
+  select(visit_date, visit_id) %>% #selecting only the "visit_date" column (which I want to move) and the visit_id (which acts as the key)
+  left_join(.,bromeliads, by= "visit_id") %>% #joining tables by "visit_id"
+  relocate("visit_date", .after= "collection_date") #moving the new column after "collection_date"
+
+view(bromeliads_output) #checking output visually
+names(bromeliads_visit) #checking column names and numbers
+
+bromeliads_output %>%
+  select(collection_date,visit_date) %>%
+  assert(a)
 
 range(visits$latitude) #Checking the range of latitude values. Range is 10.983-10.983, 
 range(visits$longitude) #Checking the longitude range. Range is -85.433- -85.433,
