@@ -120,7 +120,32 @@ bromeliads_output %>%
 
 
 # 4. Lat/Long Projection --------------------------------------------------
+#Problem 4:
+  #Here, we want to make sure that the coordinates all make sense (i.e. are within the possible ranges on Earth).
+  #We also want to assign a coordinate reference system and project the coordinates 
+visits_output %>%
+  select(longitude,latitude) %>%
+  range(.) #output range for longitude is: -85.433 and for latitude is: 10.983.
+          #longitude should be between -180-180, and this is the case.
+          #latitude should be between -90-90 and this is the case.
+          #lat and long.data makes sense.
 
+utm_lat_long<-
+  visits_output %>%
+  select(longitude,latitude) %>%
+  st_as_sf(., coords = c("longitude", "latitude"), #isolating the columns of interest
+               crs = "+proj=longlat +datum=WGS84") %>% #assign coordinate reference system WGS84
+  st_transform(., crs = "+proj=utm +zone=16 +datum=WGS84") #assigning the projection 
+
+visits_output<- visits_output %>%
+  mutate(utm_lat_long = utm_lat_long$geometry) #saving the transformed spatial data in the dataframe 
+view(visits_output) #checking
+
+#Solution 4:
+  #I checked the range of the latitude and longitude values, and there were all within the possible range.
+  #I then assigned crs: WGS84, projected the data (zone 16), and saved the projection in the output file.
+
+#The datasets are now clean and ready for analysis!
 
 
 range(visits$latitude) #Checking the range of latitude values. Range is 10.983-10.983, 
