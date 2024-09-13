@@ -101,8 +101,27 @@ view(bromeliads_output) #checking output visually
 names(bromeliads_visit) #checking column names and numbers
 
 bromeliads_output %>%
-  select(collection_date,visit_date) %>%
-  assert(a)
+  verify(collection_date == visit_date) #Checking to see if the row values for both columns are identical.
+                                        # Get an error message with 74 failures, meaning that for 74 rows, the values are not identical.
+nrow(bromeliads_output)                 #There are a total of 76 rows, so only 2 rows are identical for both columns.
+                                        #This indicates that the collection and visit dates are not the same. 
+bromeliads_output %>%
+  select(collection_date, visit_date) %>%
+  view() #Isolating the columns of interest for visual inspection
+        # Further inspection indicates that the collection_date contains many NA, and the date is often later than the visit_date.
+       
+#Solution 3:
+  #I added the visit_date in the correct order from the visits dataset to the bromeliads dataset.
+  #I compared both columns and found that 74/76 were not identical.
+  #Collection_date contains many NA and later dates than visit_date.
+  #This likely means that not all bromeliads were collection and/or that collections often took place after the initial visit
+  #Should confirm this with dataset authors to ensure that is isn't an error
+  #The cleaned and reorganied datasets were then saved in 03_Output.
+
+
+# 4. Lat/Long Projection --------------------------------------------------
+
+
 
 range(visits$latitude) #Checking the range of latitude values. Range is 10.983-10.983, 
 range(visits$longitude) #Checking the longitude range. Range is -85.433- -85.433,
